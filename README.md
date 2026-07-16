@@ -11,8 +11,12 @@ that exports exactly two entry points:
 | `vkGetInstanceProcAddr` | lavapipe (Vulkan) |
 
 Everything else — including the whole of LLVM — is linked **statically** and
-hidden. A consumer `dlopen`s the library, resolves those two symbols, and
-loads the rest of the GL/Vulkan API through them.
+hidden. A consumer `dlopen`s/`LoadLibrary`s the library, resolves those two
+symbols, and loads the rest of the GL/Vulkan API through them.
+
+Supported runtimes: **linux-x64** (Debian 12 container, glibc), **win-x64**
+(MSYS2/MinGW), **osx-arm64** (Homebrew). All three build the identical two
+entry points and render a quad offscreen through both the GL and Vulkan paths.
 
 ## Guarantees (enforced by `build/verify-binary.sh`)
 
