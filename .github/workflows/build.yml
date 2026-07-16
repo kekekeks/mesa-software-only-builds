@@ -62,3 +62,43 @@ jobs:
           name: nupkgs
           path: artifacts/packages/*.nupkg
           if-no-files-found: error
+
+  windows:
+    name: Build (win-x64)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup MSYS2 (MinGW64, static LLVM)
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            git base-devel bison flex
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-meson
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-llvm
+            mingw-w64-x86_64-python
+            mingw-w64-x86_64-python-mako
+            mingw-w64-x86_64-glslang
+            mingw-w64-x86_64-zlib
+            mingw-w64-x86_64-zstd
+
+      - name: Build single DLL (MinGW, static LLVM)
+        run: ./build/build-windows.sh
+
+      - name: Upload native artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: softpipe_gl-win-x64
+          path: artifacts/win-x64/softpipe_gl.dll
+          if-no-files-found: error
