@@ -171,13 +171,17 @@ static int run_gl_test(void)
         return 1;
     }
 
-    /* Surfaceless (Linux/llvmpipe) if available, else the default display
-     * (Windows/WGL). We render into an FBO either way, so the surface only
-     * needs to make a context current. */
+    /* On Windows, EGL is WGL-backed and the surfaceless platform is not
+     * available (eglGetPlatformDisplay would hand back a non-functional
+     * display), so use the default display. Elsewhere, use the surfaceless
+     * platform (llvmpipe). We render into an FBO either way, so the surface
+     * only needs to make a context current. */
     EGLDisplay dpy = EGL_NO_DISPLAY;
+#ifndef _WIN32
     if (eglGetPlatformDisplay)
         dpy = eglGetPlatformDisplay(EGL_PLATFORM_SURFACELESS_MESA,
                                     EGL_DEFAULT_DISPLAY, NULL);
+#endif
     if (dpy == EGL_NO_DISPLAY && eglGetDisplay)
         dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     if (dpy == EGL_NO_DISPLAY) { fprintf(stderr, "[EGL] no display\n"); return 1; }
