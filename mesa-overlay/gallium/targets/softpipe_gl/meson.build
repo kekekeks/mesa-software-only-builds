@@ -36,8 +36,11 @@ if host_machine.system() == 'windows'
     ],
     dependencies : [
       dep_llvm, driver_swrast, idep_mesautil, idep_nir, dep_ws2_32,
-      # MinGW's libregex (systre) needs libtre for tre_reg* symbols.
+      # MinGW's libregex (systre) -> libtre -> libintl -> libiconv chain.
+      # Linked statically (-static), so these add no DLL dependency.
       cc.find_library('tre', required : false),
+      cc.find_library('intl', required : false),
+      cc.find_library('iconv', required : false),
     ],
     link_args : softpipe_gl_link_args,
     name_prefix : '',
