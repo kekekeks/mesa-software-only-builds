@@ -11,13 +11,14 @@ set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO=$(cd "$SCRIPT_DIR/.." && pwd)
 RID="${RID:-win-x64}"
-MESA_SRC="$REPO/.build-mesa-win"
+# Mesa's tree contains symlinks that Windows can't recreate, so we don't copy
+# it; the CI checkout is throwaway, so we apply the overlay in place.
+MESA_SRC="$REPO/external/mesa"
 BUILD="$REPO/.build-win"
 OUT="$REPO/artifacts/$RID"
 
-echo "==> Preparing Mesa tree + overlay"
-rm -rf "$MESA_SRC" "$BUILD"
-cp -a "$REPO/external/mesa" "$MESA_SRC"
+echo "==> Applying overlay in place"
+rm -rf "$BUILD"
 "$REPO/build/apply-overlay.sh" "$MESA_SRC" "$REPO/mesa-overlay"
 
 # Some MinGW LLVM packages' `llvm-config --link-static` lists -lPolly with no
