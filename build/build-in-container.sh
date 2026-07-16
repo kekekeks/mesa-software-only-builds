@@ -59,6 +59,9 @@ cp "$SO" "$OUT/libsoftpipe_gl.so"
 # Strip to shrink; keep it a plain shared object.
 strip --strip-unneeded "$OUT/libsoftpipe_gl.so"
 
+echo "==> Dropping DT_NEEDED entries that contribute no symbols"
+"$REPO/build/strip-unused-needed.sh" "$OUT/libsoftpipe_gl.so"
+
 echo "==> Verification (see verify-binary.sh for the enforced checks)"
 "$REPO/build/verify-binary.sh" "$OUT/libsoftpipe_gl.so"
 

@@ -13,9 +13,13 @@ softpipe_gl_link_args = [
   '-Wl,--exclude-libs,ALL',
 ]
 
+# drm_stubs.c intentionally defines symbols with no header prototype.
+softpipe_gl_c_args = cc.get_supported_arguments(['-Wno-missing-prototypes'])
+
 libsoftpipe_gl = shared_library(
   'softpipe_gl',
-  files('softpipe_gl.c'),
+  files('softpipe_gl.c', 'drm_stubs.c'),
+  c_args : softpipe_gl_c_args,
   # Pull in libEGL's own compiled objects (they export eglGetProcAddress).
   objects : libegl.extract_all_objects(recursive : false),
   include_directories : [
