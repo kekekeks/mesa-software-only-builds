@@ -11,7 +11,7 @@
 # Offscreen software rendering never actually calls libdrm, so this is safe.
 #
 # LLVM is linked statically (Homebrew) so the dylib doesn't depend on libLLVM.
-# Produces artifacts/<rid>/libsoftpipe_gl.dylib.
+# Produces artifacts/<rid>/libsoftmesa.dylib.
 set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -90,20 +90,20 @@ meson setup "$BUILD" "$MESA_SRC" \
     -Dspirv-tools=disabled \
     -Dzstd=disabled
 
-echo "==> ninja build softpipe_gl"
-ninja -C "$BUILD" "src/gallium/targets/softpipe_gl/libsoftpipe_gl.dylib"
+echo "==> ninja build softmesa"
+ninja -C "$BUILD" "src/gallium/targets/softmesa/libsoftmesa.dylib"
 
-DYLIB="$BUILD/src/gallium/targets/softpipe_gl/libsoftpipe_gl.dylib"
+DYLIB="$BUILD/src/gallium/targets/softmesa/libsoftmesa.dylib"
 echo "==> Built: $DYLIB"
 file "$DYLIB" || true
 
 mkdir -p "$OUT"
-cp "$DYLIB" "$OUT/libsoftpipe_gl.dylib"
-strip -x "$OUT/libsoftpipe_gl.dylib" || true
+cp "$DYLIB" "$OUT/libsoftmesa.dylib"
+strip -x "$OUT/libsoftmesa.dylib" || true
 
 echo "==> Exported symbols (nm -gU):"
-nm -gU "$OUT/libsoftpipe_gl.dylib" | grep -iE "eglGetProcAddress|vkGetInstanceProcAddr" || echo "  (none found!)"
+nm -gU "$OUT/libsoftmesa.dylib" | grep -iE "eglGetProcAddress|vkGetInstanceProcAddr" || echo "  (none found!)"
 echo "==> Dependencies (otool -L):"
-otool -L "$OUT/libsoftpipe_gl.dylib"
+otool -L "$OUT/libsoftmesa.dylib"
 
-echo "==> Done. Artifact at $OUT/libsoftpipe_gl.dylib"
+echo "==> Done. Artifact at $OUT/libsoftmesa.dylib"

@@ -34,10 +34,10 @@ loadable on any modern (Debian-12-era glibc) Linux.
 ```
 external/mesa/                     # Mesa submodule, pinned to a release tag
 mesa-overlay/
-  gallium/targets/softpipe_gl/     # the combined single-.so Meson target
+  gallium/targets/softmesa/     # the combined single-.so Meson target
     meson.build                    #   links llvmpipe + lavapipe static libs
-    softpipe_gl.c                  #   target-helpers + vkGetInstanceProcAddr shim
-    softpipe_gl.sym                #   version script: exports only the 2 symbols
+    softmesa.c                  #   target-helpers + vkGetInstanceProcAddr shim
+    softmesa.sym                #   version script: exports only the 2 symbols
 build/
   docker/Dockerfile.linux          # Debian 12 build image (LLVM 19 static, meson)
   docker/Dockerfile.test           # clean Debian 12 image (no mesa) for smoke test
@@ -46,7 +46,7 @@ build/
   build-linux.sh                   # host entry point (builds image, runs build)
   verify-binary.sh                 # enforces the export/dependency guarantees
 tests/smoke/                       # dlopen + render-a-quad-offscreen test (GL + VK)
-artifacts/<rid>/libsoftpipe_gl.so  # build output (gitignored)
+artifacts/<rid>/libsoftmesa.so  # build output (gitignored)
 ```
 
 ## Build (Linux)
@@ -57,7 +57,7 @@ cd softpipe-gl
 ./build/build-linux.sh
 ```
 
-Output: `artifacts/linux-x64/libsoftpipe_gl.so`.
+Output: `artifacts/linux-x64/libsoftmesa.so`.
 
 ## Smoke test
 

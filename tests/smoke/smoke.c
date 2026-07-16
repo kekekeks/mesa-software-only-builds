@@ -1,5 +1,5 @@
 /*
- * Smoke test for libsoftpipe_gl.so.
+ * Smoke test for libsoftmesa.so.
  *
  * Loads the single shared object via dlopen and resolves ONLY the two exported
  * entry points (eglGetProcAddress, vkGetInstanceProcAddr). Everything else is
@@ -589,7 +589,7 @@ int main(int argc, char **argv)
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
 
-    const char *lib = argc > 1 ? argv[1] : "./libsoftpipe_gl.so";
+    const char *lib = argc > 1 ? argv[1] : "./libsoftmesa.so";
     printf("== softpipe-gl smoke test ==\nloading %s\n", lib);
 
     lib_t h = load_lib(lib);

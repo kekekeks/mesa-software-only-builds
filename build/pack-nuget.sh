@@ -2,23 +2,23 @@
 # Package the built single-file software Mesa binaries into NuGet packages.
 #
 # Produces, for every RID directory found under artifacts/:
-#   <prefix>.NativeAssets.<rid>   -> runtimes/<rid>/native/libsoftpipe_gl.<ext>
+#   <id>.<rid>   -> runtimes/<rid>/native/libsoftmesa.<ext>
 # plus a meta package:
-#   <prefix>.NativeAssets         -> depends on every per-RID package
+#   <id>         -> depends on every per-RID package
 #
 # Mirrors the layout of ~/Projects/Avalonia.Controls.Keyboard.NativeAssets but
 # without its private build-common/Nuke dependency: plain `dotnet pack`.
 #
 # Env:
-#   PKG_PREFIX  package id prefix          (default: MesaSoftware)
-#   VERSION     package version            (default: 0.1.0-local)
-#   OUTPUT      output dir for .nupkg       (default: artifacts/packages)
+#   PKG_ID      package id             (default: unofficial.mesa.softwarerenderer)
+#   VERSION     package version        (default: 0.1.0-local)
+#   OUTPUT      output dir for .nupkg   (default: artifacts/packages)
 set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO=$(cd "$SCRIPT_DIR/.." && pwd)
 
-PKG_PREFIX="${PKG_PREFIX:-MesaSoftware}"
+PKG_ID="${PKG_ID:-unofficial.mesa.softwarerenderer}"
 VERSION="${VERSION:-0.1.0-local}"
 OUTPUT="${OUTPUT:-$REPO/artifacts/packages}"
 NATIVE_ROOT="$REPO/artifacts"
@@ -50,7 +50,7 @@ fi
 
 pack_rid() {
     local rid="$1"
-    local id="$PKG_PREFIX.NativeAssets.$rid"
+    local id="$PKG_ID.$rid"
     local proj="$WORK/$id"
     mkdir -p "$proj"
     cat > "$proj/$id.csproj" <<EOF
@@ -79,12 +79,12 @@ EOF
 }
 
 pack_meta() {
-    local id="$PKG_PREFIX.NativeAssets"
+    local id="$PKG_ID"
     local proj="$WORK/$id"
     mkdir -p "$proj"
     local deps=""
     for rid in "${rids[@]}"; do
-        deps="$deps    <PackageReference Include=\"$PKG_PREFIX.NativeAssets.$rid\" Version=\"$VERSION\" />
+        deps="$deps    <PackageReference Include=\"$PKG_ID.$rid\" Version=\"$VERSION\" />
 "
     done
     cat > "$proj/$id.csproj" <<EOF

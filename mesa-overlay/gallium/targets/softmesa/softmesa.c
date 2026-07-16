@@ -1,5 +1,5 @@
 /*
- * softpipe_gl: single self-contained software-rendering shared object.
+ * softmesa: single self-contained software-rendering shared object.
  *
  * Bundles Mesa's llvmpipe (GL via EGL) and lavapipe (Vulkan) into one
  * shared library that exports exactly two entry points:
@@ -8,7 +8,7 @@
  *   - vkGetInstanceProcAddr (thin shim below, forwarding to lavapipe's ICD entry)
  *
  * Every other symbol is hidden by the accompanying version script
- * (softpipe_gl.sym) plus -Wl,--exclude-libs,ALL.
+ * (softmesa.sym) plus -Wl,--exclude-libs,ALL.
  */
 
 /*

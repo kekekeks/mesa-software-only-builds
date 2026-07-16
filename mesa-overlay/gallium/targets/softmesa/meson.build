@@ -13,18 +13,18 @@ if host_machine.system() == 'windows'
   # Exports are controlled by a .def (only the two entry points are listed;
   # providing a .def disables MinGW auto-export). The MinGW runtime is linked
   # statically so the DLL depends only on system DLLs + LLVM (static).
-  softpipe_gl_link_args = [
+  softmesa_link_args = [
     ld_args_gc_sections,
     '-static', '-static-libgcc', '-static-libstdc++',
   ]
 
-  libsoftpipe_gl = shared_library(
-    'softpipe_gl',
+  libsoftmesa = shared_library(
+    'softmesa',
     # wgl_stw_init.c is the WGL target's wgl.c (copied in by apply-overlay.sh);
     # its DllMain calls stw_init(&stw_winsys) to bring up the GDI/llvmpipe WGL
     # state tracker that egl_wgl's eglInitialize depends on.
-    files('softpipe_gl.c', 'wgl_stw_init.c'),
-    vs_module_defs : 'softpipe_gl.def',
+    files('softmesa.c', 'wgl_stw_init.c'),
+    vs_module_defs : 'softmesa.def',
     objects : libegl.extract_all_objects(recursive : false),
     include_directories : [
       inc_include, inc_src, inc_mesa, inc_gallium, inc_gallium_aux, inc_util,
@@ -45,7 +45,7 @@ if host_machine.system() == 'windows'
       cc.find_library('intl', required : false),
       cc.find_library('iconv', required : false),
     ],
-    link_args : softpipe_gl_link_args,
+    link_args : softmesa_link_args,
     name_prefix : '',
     install : true,
   )
@@ -56,29 +56,29 @@ else
   # (On macOS the surfaceless EGL/dri stack is unlocked by vendored libdrm
   #  headers + forcing system_has_kms_drm; see build/build-macos.sh.)
   if host_machine.system() == 'darwin'
-    softpipe_gl_exp = meson.current_source_dir() / 'softpipe_gl.exported_symbols'
-    softpipe_gl_link_args = [
+    softmesa_exp = meson.current_source_dir() / 'softmesa.exported_symbols'
+    softmesa_link_args = [
       '-Wl,-dead_strip',
-      '-Wl,-exported_symbols_list,@0@'.format(softpipe_gl_exp),
+      '-Wl,-exported_symbols_list,@0@'.format(softmesa_exp),
     ]
-    softpipe_gl_link_depends = files('softpipe_gl.exported_symbols')
+    softmesa_link_depends = files('softmesa.exported_symbols')
   else
-    softpipe_gl_sym = meson.current_source_dir() / 'softpipe_gl.sym'
-    softpipe_gl_link_args = [
+    softmesa_sym = meson.current_source_dir() / 'softmesa.sym'
+    softmesa_link_args = [
       ld_args_gc_sections,
-      '-Wl,--version-script,@0@'.format(softpipe_gl_sym),
+      '-Wl,--version-script,@0@'.format(softmesa_sym),
       '-Wl,--exclude-libs,ALL',
     ]
-    softpipe_gl_link_depends = files('softpipe_gl.sym')
+    softmesa_link_depends = files('softmesa.sym')
   endif
 
   # drm_stubs.c intentionally defines symbols with no header prototype.
-  softpipe_gl_c_args = cc.get_supported_arguments(['-Wno-missing-prototypes'])
+  softmesa_c_args = cc.get_supported_arguments(['-Wno-missing-prototypes'])
 
-  libsoftpipe_gl = shared_library(
-    'softpipe_gl',
-    files('softpipe_gl.c', 'drm_stubs.c'),
-    c_args : softpipe_gl_c_args,
+  libsoftmesa = shared_library(
+    'softmesa',
+    files('softmesa.c', 'drm_stubs.c'),
+    c_args : softmesa_c_args,
     # Pull in libEGL's own compiled objects (they export eglGetProcAddress).
     objects : libegl.extract_all_objects(recursive : false),
     include_directories : [
@@ -100,8 +100,8 @@ else
       idep_xmlconfig, dep_dl, dep_clock, dep_m,
     ],
     gnu_symbol_visibility : 'hidden',
-    link_args : softpipe_gl_link_args,
-    link_depends : softpipe_gl_link_depends,
+    link_args : softmesa_link_args,
+    link_depends : softmesa_link_depends,
     # Vulkan entrypoints are declared __attribute__((weak)); on Mach-O an
     # undefined weak errors unless undefined symbols are allowed (ELF resolves
     # them to 0). lavapipe's own target does the same on darwin.

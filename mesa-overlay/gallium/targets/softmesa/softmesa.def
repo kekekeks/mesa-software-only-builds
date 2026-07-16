@@ -1,4 +1,4 @@
-; Windows export list for libsoftpipe_gl. Providing a .def disables MinGW's
+; Windows export list for libsoftmesa. Providing a .def disables MinGW's
 ; auto-export, so ONLY these two entry points are exported (x64 => undecorated).
 EXPORTS
 eglGetProcAddress

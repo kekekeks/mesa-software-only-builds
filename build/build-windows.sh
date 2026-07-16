@@ -3,9 +3,9 @@
 #
 # Runs in an MSYS2 MINGW64 shell (see .github/workflows/build.yml). MinGW ships
 # a static LLVM and lets us statically link the C/C++ runtime, so the resulting
-# softpipe_gl.dll depends only on system DLLs (kernel32, user32, ...).
+# softmesa.dll depends only on system DLLs (kernel32, user32, ...).
 #
-# Produces artifacts/win-x64/softpipe_gl.dll.
+# Produces artifacts/win-x64/softmesa.dll.
 set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -68,22 +68,22 @@ meson setup "$BUILD" "$MESA_SRC" \
     -Dspirv-tools=disabled \
     -Dzstd=disabled
 
-echo "==> ninja build softpipe_gl"
-ninja -C "$BUILD" "src/gallium/targets/softpipe_gl/softpipe_gl.dll"
+echo "==> ninja build softmesa"
+ninja -C "$BUILD" "src/gallium/targets/softmesa/softmesa.dll"
 
-DLL="$BUILD/src/gallium/targets/softpipe_gl/softpipe_gl.dll"
+DLL="$BUILD/src/gallium/targets/softmesa/softmesa.dll"
 echo "==> Built: $DLL"
 file "$DLL" || true
 
 mkdir -p "$OUT"
-cp "$DLL" "$OUT/softpipe_gl.dll"
-strip --strip-unneeded "$OUT/softpipe_gl.dll" || true
+cp "$DLL" "$OUT/softmesa.dll"
+strip --strip-unneeded "$OUT/softmesa.dll" || true
 
 echo "==> Exported symbols:"
-objdump -p "$OUT/softpipe_gl.dll" | grep -A50 "Export Address Table" | grep -iE "eglGetProcAddress|vkGetInstanceProcAddr" || {
+objdump -p "$OUT/softmesa.dll" | grep -A50 "Export Address Table" | grep -iE "eglGetProcAddress|vkGetInstanceProcAddr" || {
     echo "WARNING: expected exports not found"; }
 
 echo "==> DLL dependencies:"
-objdump -p "$OUT/softpipe_gl.dll" | grep -i "DLL Name" | sort -u
+objdump -p "$OUT/softmesa.dll" | grep -i "DLL Name" | sort -u
 
-echo "==> Done. Artifact at $OUT/softpipe_gl.dll"
+echo "==> Done. Artifact at $OUT/softmesa.dll"

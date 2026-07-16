@@ -84,7 +84,7 @@ jobs:
       - name: Smoke test (LoadLibrary + render a quad)
         run: |
           gcc -O2 -Wall -I external/mesa/include tests/smoke/smoke.c -o smoke.exe
-          ./smoke.exe artifacts/win-x64/softpipe_gl.dll
+          ./smoke.exe artifacts/win-x64/softmesa.dll
 
       - name: Upload native artifact
         uses: actions/upload-artifact@v4
@@ -117,7 +117,7 @@ jobs:
       - name: Smoke test (dlopen + render a quad)
         run: |
           clang -O2 -Wall -I external/mesa/include tests/smoke/smoke.c -o smoke
-          ./smoke artifacts/osx-arm64/libsoftpipe_gl.dylib
+          ./smoke artifacts/osx-arm64/libsoftmesa.dylib
 
       - name: Upload native artifact
         uses: actions/upload-artifact@v4

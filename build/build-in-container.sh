@@ -47,22 +47,22 @@ meson setup "$BUILD" "$MESA_SRC" \
     -Dlibunwind=disabled \
     -Dzstd=enabled
 
-echo "==> ninja build softpipe_gl"
-ninja -C "$BUILD" src/gallium/targets/softpipe_gl/libsoftpipe_gl.so
+echo "==> ninja build softmesa"
+ninja -C "$BUILD" src/gallium/targets/softmesa/libsoftmesa.so
 
-SO="$BUILD/src/gallium/targets/softpipe_gl/libsoftpipe_gl.so"
+SO="$BUILD/src/gallium/targets/softmesa/libsoftmesa.so"
 echo "==> Built: $SO"
 file "$SO"
 
 mkdir -p "$OUT"
-cp "$SO" "$OUT/libsoftpipe_gl.so"
+cp "$SO" "$OUT/libsoftmesa.so"
 # Strip to shrink; keep it a plain shared object.
-strip --strip-unneeded "$OUT/libsoftpipe_gl.so"
+strip --strip-unneeded "$OUT/libsoftmesa.so"
 
 echo "==> Dropping DT_NEEDED entries that contribute no symbols"
-"$REPO/build/strip-unused-needed.sh" "$OUT/libsoftpipe_gl.so"
+"$REPO/build/strip-unused-needed.sh" "$OUT/libsoftmesa.so"
 
 echo "==> Verification (see verify-binary.sh for the enforced checks)"
-"$REPO/build/verify-binary.sh" "$OUT/libsoftpipe_gl.so"
+"$REPO/build/verify-binary.sh" "$OUT/libsoftmesa.so"
 
-echo "==> Done. Artifact at $OUT/libsoftpipe_gl.so"
+echo "==> Done. Artifact at $OUT/libsoftmesa.so"

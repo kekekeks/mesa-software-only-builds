@@ -8,7 +8,7 @@ set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO=$(cd "$SCRIPT_DIR/../.." && pwd)
 RID="${1:-linux-x64}"
-SO="$REPO/artifacts/$RID/libsoftpipe_gl.so"
+SO="$REPO/artifacts/$RID/libsoftmesa.so"
 IMAGE="softpipe-gl-test:debian12"
 
 if [[ ! -f "$SO" ]]; then
@@ -27,5 +27,5 @@ docker run --rm -v "$REPO:/work" "$IMAGE" bash -c '
     echo "--- ldd of the smoke binary (host toolchain only) ---"
     ldd /tmp/smoke || true
     echo "--- running ---"
-    /tmp/smoke '"/work/artifacts/$RID/libsoftpipe_gl.so"'
+    /tmp/smoke '"/work/artifacts/$RID/libsoftmesa.so"'
 '

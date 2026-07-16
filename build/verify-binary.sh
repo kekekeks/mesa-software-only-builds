@@ -3,7 +3,7 @@
 #   1. It exports EXACTLY: eglGetProcAddress, vkGetInstanceProcAddr
 #   2. It links only "standard" runtime deps -- crucially NO system LLVM.
 #
-# Usage: verify-binary.sh <path-to-libsoftpipe_gl.so>
+# Usage: verify-binary.sh <path-to-libsoftmesa.so>
 set -euo pipefail
 
 SO="${1:?path to .so required}"
