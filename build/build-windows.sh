@@ -31,11 +31,13 @@ for p in Polly PollyISL; do
     fi
 done
 
-# LLVM pulls in zstd via its --system-libs; the linker resolves that to the
-# shared libzstd.dll before our -static takes effect. Remove zstd's import lib
-# so `-lzstd` falls back to the static libzstd.a -> no libzstd.dll dependency.
+# MSYS2's llvm-config emits `-lzstd.dll` (the import lib) in --system-libs, which
+# forces a libzstd.dll runtime dependency that -static can't override. Overwrite
+# the import lib with the STATIC archive so `-lzstd.dll` pulls static objects.
 for d in "$llvmlib" /mingw64/lib; do
-    rm -f "$d/libzstd.dll.a" 2>/dev/null || true
+    if [ -e "$d/libzstd.a" ] && [ -e "$d/libzstd.dll.a" ]; then
+        cp -f "$d/libzstd.a" "$d/libzstd.dll.a"
+    fi
 done
 
 echo "==> meson setup"
