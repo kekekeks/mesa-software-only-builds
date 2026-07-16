@@ -1,0 +1,18 @@
+# Test container: a clean Debian 12 with a C toolchain and ONLY the standard
+# runtime libraries the produced .so is allowed to depend on. Deliberately does
+# NOT install mesa / libEGL / libGL / libvulkan -- if the smoke test renders,
+# the single .so is genuinely self-contained.
+FROM debian:12-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        gcc \
+        libc6-dev \
+        libdrm2 \
+        libexpat1 \
+        zlib1g \
+        libzstd1 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /work

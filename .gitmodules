@@ -1,0 +1,3 @@
+[submodule "external/mesa"]
+	path = external/mesa
+	url = https://gitlab.freedesktop.org/mesa/mesa.git

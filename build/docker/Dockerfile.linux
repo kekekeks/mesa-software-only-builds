@@ -1,0 +1,77 @@
+# Build container for the single-file software Mesa (llvmpipe + lavapipe) .so
+# on linux-x64 (glibc). Debian 12 (bookworm) is used so the resulting binary
+# depends only on a Debian-12-era glibc/libstdc++, which keeps it loadable on
+# any modern Linux sysroot.
+#
+# LLVM is linked statically (from Debian's llvm-19-dev), so the final .so does
+# NOT depend on any system-installed libLLVM.
+FROM debian:12-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# bookworm-backports carries a new-enough meson (>= 1.4) for Mesa 25.3;
+# Debian 12 main only has 1.0.1. This is an official Debian source.
+RUN set -eux; \
+    echo 'deb http://deb.debian.org/debian bookworm-backports main' \
+        > /etc/apt/sources.list.d/backports.list; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        git \
+        build-essential \
+        pkg-config \
+        ninja-build \
+        bison \
+        flex \
+        cmake \
+        python3 \
+        python3-mako \
+        python3-yaml \
+        python3-packaging \
+        llvm-19-dev \
+        libclang-cpp19-dev \
+        libdrm-dev \
+        libexpat1-dev \
+        zlib1g-dev \
+        libzstd-dev \
+        libelf-dev \
+        libffi-dev \
+        libedit-dev \
+        libncurses-dev \
+        libxml2-dev \
+        patchelf \
+        file; \
+    apt-get install -y --no-install-recommends -t bookworm-backports meson; \
+    rm -rf /var/lib/apt/lists/*
+
+# Mesa's meson `dependency('llvm')` looks for an `llvm-config` in PATH; Debian
+# only ships the versioned name.
+RUN ln -sf /usr/bin/llvm-config-19 /usr/local/bin/llvm-config
+
+# Debian's `llvm-config --link-static --libs` unconditionally lists -lPolly
+# -lPollyISL, but Debian does not ship the static Polly archives (Polly only
+# lives inside the shared libLLVM). llvmpipe never references any Polly symbol,
+# so satisfy the linker with empty stub archives.
+RUN set -eux; \
+    llvmdir="$(llvm-config-19 --libdir)"; \
+    ar rcs "$llvmdir/libPolly.a"; \
+    ar rcs "$llvmdir/libPollyISL.a"
+
+# Debian 12 ships glslang 12.0.0, but Mesa's software Vulkan (lavapipe) BVH
+# ray-tracing shaders require glslang >= 12.2. Build a newer release from the
+# official Khronos source (validator only; SPIRV-Tools optimizer not needed).
+ARG GLSLANG_VERSION=14.3.0
+RUN set -eux; \
+    git clone --depth 1 -b "$GLSLANG_VERSION" \
+        https://github.com/KhronosGroup/glslang.git /tmp/glslang; \
+    cmake -S /tmp/glslang -B /tmp/glslang/build -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DENABLE_OPT=OFF \
+        -DGLSLANG_TESTS=OFF \
+        -DENABLE_GLSLANG_BINARIES=ON \
+        -DCMAKE_INSTALL_PREFIX=/usr/local; \
+    ninja -C /tmp/glslang/build install; \
+    rm -rf /tmp/glslang; \
+    glslangValidator --version
+
+WORKDIR /work
