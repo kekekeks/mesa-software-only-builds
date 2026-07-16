@@ -21,7 +21,7 @@ if host_machine.system() == 'windows'
   libsoftpipe_gl = shared_library(
     'softpipe_gl',
     files('softpipe_gl.c'),
-    vs_module_defs : files('softpipe_gl.def'),
+    vs_module_defs : 'softpipe_gl.def',
     objects : libegl.extract_all_objects(recursive : false),
     include_directories : [
       inc_include, inc_src, inc_mesa, inc_gallium, inc_gallium_aux, inc_util,
