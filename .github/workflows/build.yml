@@ -98,6 +98,11 @@ jobs:
       - name: Build single DLL (MinGW, static LLVM)
         run: ./build/build-windows.sh
 
+      - name: Smoke test (LoadLibrary + render a quad)
+        run: |
+          gcc -O2 -Wall -I external/mesa/include tests/smoke/smoke.c -o smoke.exe
+          ./smoke.exe artifacts/win-x64/softpipe_gl.dll
+
       - name: Upload native artifact
         uses: actions/upload-artifact@v4
         with:

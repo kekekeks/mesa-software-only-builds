@@ -14,10 +14,23 @@
  * Exit code 0 = both paths rendered and verified.
  */
 #define _GNU_SOURCE
-#include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef _WIN32
+#include <windows.h>
+typedef HMODULE lib_t;
+static lib_t load_lib(const char *p) { return LoadLibraryA(p); }
+static void  *lib_sym(lib_t h, const char *n) { return (void *)GetProcAddress(h, n); }
+static const char *lib_err(void) { return "LoadLibrary/GetProcAddress failed"; }
+#else
+#include <dlfcn.h>
+typedef void *lib_t;
+static lib_t load_lib(const char *p) { return dlopen(p, RTLD_NOW | RTLD_LOCAL); }
+static void  *lib_sym(lib_t h, const char *n) { return dlsym(h, n); }
+static const char *lib_err(void) { return dlerror(); }
+#endif
 #include <stdint.h>
 
 /* We only ever call through function pointers we load ourselves; disable the
@@ -62,10 +75,12 @@ typedef GLproc (*PFN_eglGetProcAddress)(const char *);
 
 /* EGL entry points */
 typedef EGLDisplay (*PFN_eglGetPlatformDisplay)(EGLenum, void *, const EGLAttrib *);
+typedef EGLDisplay (*PFN_eglGetDisplay)(EGLNativeDisplayType);
 typedef EGLBoolean (*PFN_eglInitialize)(EGLDisplay, EGLint *, EGLint *);
 typedef EGLBoolean (*PFN_eglChooseConfig)(EGLDisplay, const EGLint *, EGLConfig *, EGLint, EGLint *);
 typedef EGLBoolean (*PFN_eglBindAPI)(EGLenum);
 typedef EGLContext (*PFN_eglCreateContext)(EGLDisplay, EGLConfig, EGLContext, const EGLint *);
+typedef EGLSurface (*PFN_eglCreatePbufferSurface)(EGLDisplay, EGLConfig, const EGLint *);
 typedef EGLBoolean (*PFN_eglMakeCurrent)(EGLDisplay, EGLSurface, EGLSurface, EGLContext);
 typedef EGLint     (*PFN_eglGetError)(void);
 typedef const char*(*PFN_eglQueryString)(EGLDisplay, EGLint);
@@ -140,22 +155,31 @@ static int run_gl_test(void)
     printf("[EGL/GLES2] loading entry points via eglGetProcAddress...\n");
 
     PFN_eglGetPlatformDisplay eglGetPlatformDisplay = egl("eglGetPlatformDisplay");
+    PFN_eglGetDisplay   eglGetDisplay   = egl("eglGetDisplay");
     PFN_eglInitialize   eglInitialize   = egl("eglInitialize");
     PFN_eglChooseConfig eglChooseConfig = egl("eglChooseConfig");
     PFN_eglBindAPI      eglBindAPI      = egl("eglBindAPI");
     PFN_eglCreateContext eglCreateContext = egl("eglCreateContext");
+    PFN_eglCreatePbufferSurface eglCreatePbufferSurface = egl("eglCreatePbufferSurface");
     PFN_eglMakeCurrent  eglMakeCurrent  = egl("eglMakeCurrent");
     PFN_eglQueryString  eglQueryString  = egl("eglQueryString");
 
-    if (!eglGetPlatformDisplay || !eglInitialize || !eglChooseConfig ||
+    if (!eglInitialize || !eglChooseConfig ||
         !eglBindAPI || !eglCreateContext || !eglMakeCurrent) {
         fprintf(stderr, "[EGL/GLES2] FAILED to resolve core EGL entry points "
                         "(EGL_KHR_(client_)get_all_proc_addresses missing?)\n");
         return 1;
     }
 
-    EGLDisplay dpy = eglGetPlatformDisplay(EGL_PLATFORM_SURFACELESS_MESA,
-                                           EGL_DEFAULT_DISPLAY, NULL);
+    /* Surfaceless (Linux/llvmpipe) if available, else the default display
+     * (Windows/WGL). We render into an FBO either way, so the surface only
+     * needs to make a context current. */
+    EGLDisplay dpy = EGL_NO_DISPLAY;
+    if (eglGetPlatformDisplay)
+        dpy = eglGetPlatformDisplay(EGL_PLATFORM_SURFACELESS_MESA,
+                                    EGL_DEFAULT_DISPLAY, NULL);
+    if (dpy == EGL_NO_DISPLAY && eglGetDisplay)
+        dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     if (dpy == EGL_NO_DISPLAY) { fprintf(stderr, "[EGL] no display\n"); return 1; }
 
     EGLint major = 0, minor = 0;
@@ -182,11 +206,22 @@ static int run_gl_test(void)
     EGLContext ctx = eglCreateContext(dpy, config, EGL_NO_CONTEXT, ctx_attribs);
     if (ctx == EGL_NO_CONTEXT) { fprintf(stderr, "[EGL] createContext failed\n"); return 1; }
 
-    /* Surfaceless: rely on EGL_KHR_surfaceless_context + a client FBO. */
-    if (!eglMakeCurrent(dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, ctx)) {
-        fprintf(stderr, "[EGL] makeCurrent(surfaceless) failed\n"); return 1;
+    /* Prefer a surfaceless context (EGL_KHR_surfaceless_context). If the
+     * implementation needs a surface (e.g. WGL-backed EGL on Windows), fall
+     * back to a small pbuffer. We render into an FBO regardless. */
+    if (eglMakeCurrent(dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, ctx)) {
+        printf("[GLES2] context current (surfaceless)\n");
+    } else if (eglCreatePbufferSurface) {
+        const EGLint pb_attribs[] = { EGL_WIDTH, W, EGL_HEIGHT, H, EGL_NONE };
+        EGLSurface pb = eglCreatePbufferSurface(dpy, config, pb_attribs);
+        if (pb == EGL_NO_SURFACE || !eglMakeCurrent(dpy, pb, pb, ctx)) {
+            fprintf(stderr, "[EGL] makeCurrent(pbuffer) failed\n"); return 1;
+        }
+        printf("[GLES2] context current (pbuffer)\n");
+    } else {
+        fprintf(stderr, "[EGL] makeCurrent failed and no pbuffer fallback\n");
+        return 1;
     }
-    printf("[GLES2] context current (surfaceless)\n");
 
     /* Resolve the GL functions (also via eglGetProcAddress). */
     PFN_glGenFramebuffers glGenFramebuffers = egl("glGenFramebuffers");
@@ -549,11 +584,11 @@ int main(int argc, char **argv)
     const char *lib = argc > 1 ? argv[1] : "./libsoftpipe_gl.so";
     printf("== softpipe-gl smoke test ==\nloading %s\n", lib);
 
-    void *h = dlopen(lib, RTLD_NOW | RTLD_LOCAL);
-    if (!h) { fprintf(stderr, "dlopen failed: %s\n", dlerror()); return 2; }
+    lib_t h = load_lib(lib);
+    if (!h) { fprintf(stderr, "load failed: %s\n", lib_err()); return 2; }
 
-    p_eglGetProcAddress = (PFN_eglGetProcAddress)dlsym(h, "eglGetProcAddress");
-    p_vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)dlsym(h, "vkGetInstanceProcAddr");
+    p_eglGetProcAddress = (PFN_eglGetProcAddress)lib_sym(h, "eglGetProcAddress");
+    p_vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)lib_sym(h, "vkGetInstanceProcAddr");
     if (!p_eglGetProcAddress || !p_vkGetInstanceProcAddr) {
         fprintf(stderr, "FAILED: expected exports missing (egl=%p vk=%p)\n",
                 (void *)p_eglGetProcAddress, (void *)p_vkGetInstanceProcAddr);
