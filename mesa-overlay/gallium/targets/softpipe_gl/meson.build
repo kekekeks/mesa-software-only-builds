@@ -20,7 +20,10 @@ if host_machine.system() == 'windows'
 
   libsoftpipe_gl = shared_library(
     'softpipe_gl',
-    files('softpipe_gl.c'),
+    # wgl_stw_init.c is the WGL target's wgl.c (copied in by apply-overlay.sh);
+    # its DllMain calls stw_init(&stw_winsys) to bring up the GDI/llvmpipe WGL
+    # state tracker that egl_wgl's eglInitialize depends on.
+    files('softpipe_gl.c', 'wgl_stw_init.c'),
     vs_module_defs : 'softpipe_gl.def',
     objects : libegl.extract_all_objects(recursive : false),
     include_directories : [

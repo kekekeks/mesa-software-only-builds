@@ -15,6 +15,11 @@ dst="$MESA_SRC/src/gallium/targets/softpipe_gl"
 rm -rf "$dst"
 cp -a "$OVERLAY/gallium/targets/softpipe_gl" "$dst"
 
+# Windows needs the WGL target's stw init (DllMain -> stw_init) which lives in
+# the wgl target's wgl.c. Copy it alongside the overlay so our combined target
+# can compile it in (meson forbids referencing files across sibling subdirs).
+cp "$MESA_SRC/src/gallium/targets/wgl/wgl.c" "$dst/wgl_stw_init.c"
+
 meson_file="$MESA_SRC/src/meson.build"
 if ! grep -q "gallium/targets/softpipe_gl" "$meson_file"; then
     cat >> "$meson_file" <<'EOF'
