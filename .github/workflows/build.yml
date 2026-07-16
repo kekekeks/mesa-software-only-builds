@@ -21,7 +21,7 @@ env:
 
 jobs:
   linux:
-    name: Build + smoke test + pack (linux-x64)
+    name: Build + smoke test (linux-x64)
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -39,32 +39,15 @@ jobs:
       - name: Smoke test (clean container, no mesa)
         run: ./tests/smoke/run.sh linux-x64
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Pack NuGet
-        env:
-          VERSION: 0.1.0-ci.${{ github.run_number }}
-        run: ./build/pack-nuget.sh
-
       - name: Upload native artifact
         uses: actions/upload-artifact@v4
         with:
-          name: libsoftpipe_gl-linux-x64
-          path: artifacts/linux-x64/libsoftpipe_gl.so
-          if-no-files-found: error
-
-      - name: Upload nupkgs
-        uses: actions/upload-artifact@v4
-        with:
-          name: nupkgs
-          path: artifacts/packages/*.nupkg
+          name: native-linux-x64
+          path: artifacts/linux-x64/
           if-no-files-found: error
 
   windows:
-    name: Build (win-x64)
+    name: Build + smoke test (win-x64)
     runs-on: windows-latest
     defaults:
       run:
@@ -106,6 +89,45 @@ jobs:
       - name: Upload native artifact
         uses: actions/upload-artifact@v4
         with:
-          name: softpipe_gl-win-x64
-          path: artifacts/win-x64/softpipe_gl.dll
+          name: native-win-x64
+          path: artifacts/win-x64/
+          if-no-files-found: error
+
+  pack:
+    name: Pack NuGet
+    needs: [linux, windows]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Download linux native
+        uses: actions/download-artifact@v4
+        with:
+          name: native-linux-x64
+          path: artifacts/linux-x64/
+
+      - name: Download windows native
+        uses: actions/download-artifact@v4
+        with:
+          name: native-win-x64
+          path: artifacts/win-x64/
+
+      - name: Pack NuGet
+        env:
+          VERSION: 0.1.0-ci.${{ github.run_number }}
+        run: ./build/pack-nuget.sh
+
+      - name: Upload nupkgs
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkgs
+          path: artifacts/packages/*.nupkg
           if-no-files-found: error
