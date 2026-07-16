@@ -3,3 +3,4 @@ artifacts/
 .build-mesa-win/
 .build-win/
 .build-macos/
+.macos-staticlibs/

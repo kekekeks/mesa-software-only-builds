@@ -54,6 +54,14 @@ echo "==> Using llvm-config: $(command -v llvm-config) ($(llvm-config --version)
 echo "==> Patching macOS-incompatible Linux-isms"
 python3 "$REPO/build/macos-source-patches.py" "$MESA_SRC"
 
+# Homebrew LLVM's --system-libs pulls -lzstd. Expose ONLY the static libzstd.a
+# in a private -L dir (macOS ld would otherwise prefer the .dylib) so the dylib
+# links zstd statically and stays free of a libzstd runtime dependency.
+STATICLIBS="$REPO/.macos-staticlibs"
+rm -rf "$STATICLIBS"; mkdir -p "$STATICLIBS"
+ln -sf "$(brew --prefix zstd)/lib/libzstd.a" "$STATICLIBS/libzstd.a"
+export LDFLAGS="-L$STATICLIBS ${LDFLAGS:-}"
+
 echo "==> meson setup"
 meson setup "$BUILD" "$MESA_SRC" \
     --buildtype=release \
