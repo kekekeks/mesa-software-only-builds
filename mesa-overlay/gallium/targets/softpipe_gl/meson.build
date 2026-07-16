@@ -90,6 +90,10 @@ else
     link_with : [
       libmesa, libgalliumvl, libgallium, libglapi, libpipe_loader_static,
       libws_null, libwsw, libswdri, libswkmsdri, libloader,
+      # lavapipe's Vulkan runtime/wsi. Explicit because macOS ld doesn't get
+      # them via liblavapipe_st's transitive link deps the way GNU ld does.
+      libvulkan_runtime, libvulkan_lite_runtime, libvulkan_instance,
+      libvulkan_wsi,
     ],
     dependencies : [
       dep_llvm, driver_swrast, idep_mesautil, dep_libdrm, dep_thread,
