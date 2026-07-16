@@ -31,6 +31,13 @@ for p in Polly PollyISL; do
     fi
 done
 
+# LLVM pulls in zstd via its --system-libs; the linker resolves that to the
+# shared libzstd.dll before our -static takes effect. Remove zstd's import lib
+# so `-lzstd` falls back to the static libzstd.a -> no libzstd.dll dependency.
+for d in "$llvmlib" /mingw64/lib; do
+    rm -f "$d/libzstd.dll.a" 2>/dev/null || true
+done
+
 echo "==> meson setup"
 meson setup "$BUILD" "$MESA_SRC" \
     --buildtype=release \
