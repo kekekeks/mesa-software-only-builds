@@ -48,11 +48,11 @@ LLVM_PREFIX=$(brew --prefix llvm)
 export PATH="$LLVM_PREFIX/bin:$PATH"
 echo "==> Using llvm-config: $(command -v llvm-config) ($(llvm-config --version))"
 
-# Force-include a small compat shim (ppoll etc.) into every TU; forcing
-# HAVE_LIBDRM to unlock surfaceless EGL pulls in a few Linux-only code paths.
-COMPAT="-include $REPO/mesa-overlay/macos_compat.h"
-export CFLAGS="${CFLAGS:-} $COMPAT"
-export CXXFLAGS="${CXXFLAGS:-} $COMPAT"
+# Patch Linux-only paths that get pulled in by forcing HAVE_LIBDRM. We patch
+# the specific source(s) rather than force-including a header globally, which
+# would corrupt Meson's feature-detection probes.
+echo "==> Patching macOS-incompatible Linux-isms"
+python3 "$REPO/build/macos-source-patches.py" "$MESA_SRC"
 
 echo "==> meson setup"
 meson setup "$BUILD" "$MESA_SRC" \
