@@ -1,0 +1,64 @@
+name: Build
+
+on:
+  push:
+    branches: [main, master, ci/*]
+    tags: ['*']
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: 1
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+
+jobs:
+  linux:
+    name: Build + smoke test + pack (linux-x64)
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build single .so (Debian 12 container)
+        run: ./build/build-linux.sh
+
+      - name: Smoke test (clean container, no mesa)
+        run: ./tests/smoke/run.sh linux-x64
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Pack NuGet
+        env:
+          VERSION: 0.1.0-ci.${{ github.run_number }}
+        run: ./build/pack-nuget.sh
+
+      - name: Upload native artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libsoftpipe_gl-linux-x64
+          path: artifacts/linux-x64/libsoftpipe_gl.so
+          if-no-files-found: error
+
+      - name: Upload nupkgs
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkgs
+          path: artifacts/packages/*.nupkg
+          if-no-files-found: error
