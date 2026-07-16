@@ -56,7 +56,8 @@ meson setup "$BUILD" "$MESA_SRC" \
     -Dvulkan-layers= \
     -Dtools= \
     -Dbuild-tests=false \
-    -Dzstd=enabled
+    -Dspirv-tools=disabled \
+    -Dzstd=disabled
 
 echo "==> ninja build softpipe_gl"
 ninja -C "$BUILD" "src/gallium/targets/softpipe_gl/softpipe_gl.dll"
