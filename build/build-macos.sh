@@ -48,6 +48,12 @@ LLVM_PREFIX=$(brew --prefix llvm)
 export PATH="$LLVM_PREFIX/bin:$PATH"
 echo "==> Using llvm-config: $(command -v llvm-config) ($(llvm-config --version))"
 
+# Force-include a small compat shim (ppoll etc.) into every TU; forcing
+# HAVE_LIBDRM to unlock surfaceless EGL pulls in a few Linux-only code paths.
+COMPAT="-include $REPO/mesa-overlay/macos_compat.h"
+export CFLAGS="${CFLAGS:-} $COMPAT"
+export CXXFLAGS="${CXXFLAGS:-} $COMPAT"
+
 echo "==> meson setup"
 meson setup "$BUILD" "$MESA_SRC" \
     --buildtype=release \
