@@ -31,9 +31,13 @@ if host_machine.system() == 'windows'
     link_with : [
       libgallium, libglsl, libmesa, libwsgdi, libglapi_bridge, libglapi,
       libgalliumvl_stub,
+      # lavapipe's software pipe-loader + sw winsys backends.
+      libpipe_loader_static, libws_null, libwsw,
     ],
     dependencies : [
       dep_llvm, driver_swrast, idep_mesautil, idep_nir, dep_ws2_32,
+      # MinGW's libregex (systre) needs libtre for tre_reg* symbols.
+      cc.find_library('tre', required : false),
     ],
     link_args : softpipe_gl_link_args,
     name_prefix : '',
