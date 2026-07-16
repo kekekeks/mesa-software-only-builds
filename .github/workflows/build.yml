@@ -93,6 +93,39 @@ jobs:
           path: artifacts/win-x64/
           if-no-files-found: error
 
+  macos:
+    name: Build + smoke test (osx-arm64)
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install build tools (Homebrew + pip)
+        run: |
+          brew install llvm meson ninja glslang pkgconf bison flex
+          python3 -m pip install --break-system-packages --user mako pyyaml packaging
+
+      - name: Build single dylib (static LLVM)
+        run: |
+          export PATH="$(brew --prefix bison)/bin:$(brew --prefix flex)/bin:$PATH"
+          export PATH="$HOME/Library/Python/$(python3 -c 'import sys;print("%d.%d"%sys.version_info[:2])')/bin:$PATH"
+          ./build/build-macos.sh
+
+      - name: Smoke test (dlopen + render a quad)
+        run: |
+          clang -O2 -Wall -I external/mesa/include tests/smoke/smoke.c -o smoke
+          ./smoke artifacts/osx-arm64/libsoftpipe_gl.dylib
+
+      - name: Upload native artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-osx-arm64
+          path: artifacts/osx-arm64/
+          if-no-files-found: error
+
   pack:
     name: Pack NuGet
     needs: [linux, windows]

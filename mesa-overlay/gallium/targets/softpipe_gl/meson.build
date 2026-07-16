@@ -52,13 +52,25 @@ if host_machine.system() == 'windows'
 
 else
 
-  # ---- Linux / *nix: Gallium DRI frontend linked into libEGL + lavapipe ----
-  softpipe_gl_sym = meson.current_source_dir() / 'softpipe_gl.sym'
-  softpipe_gl_link_args = [
-    ld_args_gc_sections,
-    '-Wl,--version-script,@0@'.format(softpipe_gl_sym),
-    '-Wl,--exclude-libs,ALL',
-  ]
+  # ---- Linux / *nix / macOS: Gallium DRI frontend + libEGL + lavapipe ----
+  # (On macOS the surfaceless EGL/dri stack is unlocked by vendored libdrm
+  #  headers + forcing system_has_kms_drm; see build/build-macos.sh.)
+  if host_machine.system() == 'darwin'
+    softpipe_gl_exp = meson.current_source_dir() / 'softpipe_gl.exported_symbols'
+    softpipe_gl_link_args = [
+      '-Wl,-dead_strip',
+      '-Wl,-exported_symbols_list,@0@'.format(softpipe_gl_exp),
+    ]
+    softpipe_gl_link_depends = files('softpipe_gl.exported_symbols')
+  else
+    softpipe_gl_sym = meson.current_source_dir() / 'softpipe_gl.sym'
+    softpipe_gl_link_args = [
+      ld_args_gc_sections,
+      '-Wl,--version-script,@0@'.format(softpipe_gl_sym),
+      '-Wl,--exclude-libs,ALL',
+    ]
+    softpipe_gl_link_depends = files('softpipe_gl.sym')
+  endif
 
   # drm_stubs.c intentionally defines symbols with no header prototype.
   softpipe_gl_c_args = cc.get_supported_arguments(['-Wno-missing-prototypes'])
@@ -85,7 +97,7 @@ else
     ],
     gnu_symbol_visibility : 'hidden',
     link_args : softpipe_gl_link_args,
-    link_depends : files('softpipe_gl.sym'),
+    link_depends : softpipe_gl_link_depends,
     install : true,
     name_prefix : 'lib',
   )

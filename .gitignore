@@ -2,3 +2,4 @@ artifacts/
 *.log
 .build-mesa-win/
 .build-win/
+.build-macos/
