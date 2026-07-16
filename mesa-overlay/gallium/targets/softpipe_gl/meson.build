@@ -102,6 +102,10 @@ else
     gnu_symbol_visibility : 'hidden',
     link_args : softpipe_gl_link_args,
     link_depends : softpipe_gl_link_depends,
+    # Vulkan entrypoints are declared __attribute__((weak)); on Mach-O an
+    # undefined weak errors unless undefined symbols are allowed (ELF resolves
+    # them to 0). lavapipe's own target does the same on darwin.
+    override_options : host_machine.system() == 'darwin' ? ['b_lundef=false'] : [],
     install : true,
     name_prefix : 'lib',
   )
