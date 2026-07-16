@@ -581,6 +581,10 @@ static int run_vk_test(void)
 
 int main(int argc, char **argv)
 {
+    /* Unbuffered so the last line printed before any crash is visible in CI. */
+    setvbuf(stdout, NULL, _IONBF, 0);
+    setvbuf(stderr, NULL, _IONBF, 0);
+
     const char *lib = argc > 1 ? argv[1] : "./libsoftpipe_gl.so";
     printf("== softpipe-gl smoke test ==\nloading %s\n", lib);
 
