@@ -109,7 +109,7 @@ jobs:
           - rid: osx-arm64
             runner: macos-14   # Apple silicon
           - rid: osx-x64
-            runner: macos-13   # Intel
+            runner: macos-15-intel   # Intel (macos-13 was retired)
     steps:
       - name: Checkout
         uses: actions/checkout@v4
