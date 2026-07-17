@@ -100,8 +100,16 @@ jobs:
           if-no-files-found: error
 
   macos:
-    name: Build + smoke test (osx-arm64)
-    runs-on: macos-14
+    name: Build + smoke test (${{ matrix.rid }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: osx-arm64
+            runner: macos-14   # Apple silicon
+          - rid: osx-x64
+            runner: macos-13   # Intel
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -115,6 +123,8 @@ jobs:
           python3 -m pip install --break-system-packages --user mako pyyaml packaging
 
       - name: Build single dylib (static LLVM)
+        env:
+          RID: ${{ matrix.rid }}
         run: |
           export PATH="$(brew --prefix bison)/bin:$(brew --prefix flex)/bin:$PATH"
           export PATH="$HOME/Library/Python/$(python3 -c 'import sys;print("%d.%d"%sys.version_info[:2])')/bin:$PATH"
@@ -123,13 +133,13 @@ jobs:
       - name: Smoke test (dlopen + render a quad)
         run: |
           clang -O2 -Wall -I external/mesa/include tests/smoke/smoke.c -o smoke
-          ./smoke artifacts/osx-arm64/libsoftmesa.dylib
+          ./smoke artifacts/${{ matrix.rid }}/libsoftmesa.dylib
 
       - name: Upload native artifact
         uses: actions/upload-artifact@v4
         with:
-          name: native-osx-arm64
-          path: artifacts/osx-arm64/
+          name: native-${{ matrix.rid }}
+          path: artifacts/${{ matrix.rid }}/
           if-no-files-found: error
 
   pack:
@@ -159,11 +169,17 @@ jobs:
           name: native-win-x64
           path: artifacts/win-x64/
 
-      - name: Download macOS native
+      - name: Download macOS arm64 native
         uses: actions/download-artifact@v4
         with:
           name: native-osx-arm64
           path: artifacts/osx-arm64/
+
+      - name: Download macOS x64 native
+        uses: actions/download-artifact@v4
+        with:
+          name: native-osx-x64
+          path: artifacts/osx-x64/
 
       - name: Pack NuGet
         env:
