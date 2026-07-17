@@ -70,6 +70,23 @@ installed), `dlopen`s the produced `.so`, and renders a quad offscreen through
 both the EGL/GLES2 (llvmpipe) and Vulkan (lavapipe) paths, reading the pixels
 back to verify.
 
+## Versioning
+
+Package versions track the **pinned Mesa release** (`external/mesa/VERSION`)
+with the CI run number as a 4th component, so a version says exactly which Mesa
+a binary came from:
+
+| Build | Version | Example |
+| --- | --- | --- |
+| CI (`unofficial.mesa.softwarerenderer` packages) | `<mesa>.<gh-run-number>` | `25.3.6.42` |
+| Local `pack-nuget.sh` | `<mesa>-local` (prerelease) | `25.3.6-local` |
+
+Ordering follows NuGet semantics: bumping the Mesa submodule (`25.3.7.x`)
+always sorts above any `25.3.6.x`, and within one Mesa version a higher run
+number sorts higher. Override with `VERSION=…` (full) or `BUILD_NUMBER=…` /
+`MESA_VERSION=…` for the pieces. Bumping Mesa is therefore just: move the
+submodule to the new release tag and the package version follows automatically.
+
 ## How the single `.so` is produced
 
 Modern Mesa links the Gallium DRI driver directly into `libEGL`, and lavapipe

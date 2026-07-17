@@ -9,17 +9,39 @@
 # Mirrors the layout of ~/Projects/Avalonia.Controls.Keyboard.NativeAssets but
 # without its private build-common/Nuke dependency: plain `dotnet pack`.
 #
+# Versioning: the package version tracks the pinned Mesa release
+# (external/mesa/VERSION, e.g. 25.3.6) with the CI run number as a 4th
+# component -- so the version says exactly which Mesa a binary came from:
+#   CI     : <mesa>.<BUILD_NUMBER>   e.g. 25.3.6.42   (NuGet 4-part version)
+#   local  : <mesa>-local            e.g. 25.3.6-local (prerelease)
+# A Mesa bump (25.3.7.x) always sorts above any 25.3.6.x; within one Mesa
+# version, higher run numbers sort higher. Set VERSION to override entirely.
+#
 # Env:
-#   PKG_ID      package id             (default: unofficial.mesa.softwarerenderer)
-#   VERSION     package version        (default: 0.1.0-local)
-#   OUTPUT      output dir for .nupkg   (default: artifacts/packages)
+#   PKG_ID        package id           (default: unofficial.mesa.softwarerenderer)
+#   BUILD_NUMBER  CI build number appended as the 4th version component
+#   VERSION       full version override (bypasses the scheme above)
+#   OUTPUT        output dir for .nupkg (default: artifacts/packages)
 set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO=$(cd "$SCRIPT_DIR/.." && pwd)
 
 PKG_ID="${PKG_ID:-unofficial.mesa.softwarerenderer}"
-VERSION="${VERSION:-0.1.0-local}"
+
+# Base = numeric X.Y.Z from the pinned Mesa VERSION file (or MESA_VERSION env,
+# e.g. when the submodule isn't checked out in a pack-only CI job).
+if [[ -z "${MESA_VERSION:-}" ]]; then
+    MESA_VERSION=$(sed -E 's/[^0-9.].*$//' "$REPO/external/mesa/VERSION" | tr -d '[:space:]')
+fi
+if [[ -z "${VERSION:-}" ]]; then
+    if [[ -n "${BUILD_NUMBER:-}" ]]; then
+        VERSION="${MESA_VERSION}.${BUILD_NUMBER}"
+    else
+        VERSION="${MESA_VERSION}-local"
+    fi
+fi
+echo "==> Package version: $VERSION (Mesa $MESA_VERSION)"
 OUTPUT="${OUTPUT:-$REPO/artifacts/packages}"
 NATIVE_ROOT="$REPO/artifacts"
 WORK="$REPO/artifacts/_pack"
